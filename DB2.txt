@@ -1,0 +1,460 @@
+################DB2 安装#####################################
+MIS_DB2_28:/tmp # tar -xvf v9.7fp8_linuxx64_server.tar.gz
+MIS_DB2_28:/tmp # cd server
+MIS_DB2_28:/tmp/server # ./db2_install
+WARNING:
+DBT3534W  The db2prereqcheck utility determined that ASLR is set to ON and that this could cause issues with some tools.
+ 
+Default directory for installation of products - /opt/ibm/db2/V9.7
+
+***********************************************************
+Do you want to choose a different directory to install [yes/no] ?
+no
+ 
+ 
+Specify one of the following keywords to install DB2 products.
+
+  AESE 
+  ESE 
+  CONSV 
+  WSE 
+  EXP 
+  PE 
+  CLIENT 
+  RTCL 
+ 
+Enter "help" to redisplay product names.
+
+Enter "quit" to exit.
+
+***********************************************************
+ESE
+WARNING:
+DBT3534W  The db2prereqcheck utility determined that ASLR is set to ON and that this could cause issues with some tools.
+DB2 installation is being initialized.
+
+
+
+MIS_DB2_28:/tmp # groupadd -g 901 db2iadm1
+MIS_DB2_28:/tmp # groupadd -g 902 db2fadm1
+MIS_DB2_28:/tmp # groupadd -g 903 dasadm1
+
+MIS_DB2_28:/tmp # useradd -g db2iadm1 -u 801 -d /home/db2inst1 -m db2inst1
+MIS_DB2_28:/tmp # useradd -g db2fadm1 -u 802 -d /home/db2fenc1 -m db2fenc1
+MIS_DB2_28:/tmp # useradd -g dasadm1 -u 803 -d /home/dasusr1 -m dasusr1
+
+
+MIS_DB2_28:/tmp # useradd  -u 810 -d /home/bquery -m bquery
+MIS_DB2_28:/tmp # useradd  -u 811 -d /home/etluser -m etluser
+MIS_DB2_28:/tmp # useradd  -u 812 -d /home/misapp -m misapp
+MIS_DB2_28:/tmp # useradd  -u 813 -d /home/ftpuser -m ftpuser
+MIS_DB2_28:/tmp # su - ftpuser
+ftpuser@MISDB28:~$ ln -s /bak/mds_txt mds   #存放MDS文本文件
+
+
+
+MIS_DB2_28:/tmp # passwd db2inst1
+Changing password for db2inst1.
+New Password: 
+Bad password: it is based on a dictionary word
+Reenter New Password: 
+Password changed.
+MIS_DB2_28:/tmp # 
+
+
+MIS_DB2_28:/tmp # cd /opt/ibm/db2/V9.7/instance
+MIS_DB2_28:/opt/ibm/db2/V9.7/instance # ./dascrt -u dasusr1
+SQL4409W  The DB2 Administration Server is already active.
+DBI1070I  Program dascrt completed successfully.
+
+
+MIS_DB2_28:/opt/ibm/db2/V9.7/instance # ./db2icrt -u db2inst1 db2inst1 
+DBI1070I  Program db2icrt completed successfully.
+
+
+
+MIS_DB2_28:/opt/ibm/db2/V9.7/instance # vi /etc/services
+
+最后增加和修改
+DB2_db2inst1    60000/tcp
+DB2_db2inst1_1  60001/tcp
+DB2_db2inst1_2  60002/tcp
+DB2_db2inst1_END        60003/tcp
+db2c_db2inst1      50000/tcp
+
+MISDB28:~ # su - db2inst1
+db2inst1@MISDB28:~$ db2set DB2RSHCMD=/usr/bin/ssh
+db2inst1@MISDB28:~$ db2 update dbm cfg USING SVCENAME db2c_db2inst1
+db2inst1@MISDB28:~$ db2set DB2COMM=tcpip
+db2inst1@MISDB28:~$ db2start
+
+
+db2inst1@MISDB28:/tmp/License_9.7$ db2licm -a  db2ese_c.lic
+db2inst1@MISDB28:/tmp/License_9.7$ db2licm -a db2consv_ee.lic
+
+
+#####################db2 BQUYER 库 裸设备配置##########################################     
+
+
+
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab    rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab1   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab2   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab3   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab4   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab5   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab6   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_idx    rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab7   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_bquery_tab8   rootvg  
+           
+MISDB28:~ # rcraw start
+MISDB28:~ # raw /dev/raw/raw3  /dev/rootvg/lv_bquery_tab
+MISDB28:~ # raw /dev/raw/raw4  /dev/rootvg/lv_bquery_tab1  
+MISDB28:~ # raw /dev/raw/raw5  /dev/rootvg/lv_bquery_tab2 
+MISDB28:~ # raw /dev/raw/raw6  /dev/rootvg/lv_bquery_tab3
+MISDB28:~ # raw /dev/raw/raw7  /dev/rootvg/lv_bquery_tab4 
+MISDB28:~ # raw /dev/raw/raw8  /dev/rootvg/lv_bquery_tab5 
+MISDB28:~ # raw /dev/raw/raw9  /dev/rootvg/lv_bquery_tab6  
+MISDB28:~ # raw /dev/raw/raw10 /dev/rootvg/lv_bquery_idx   
+MISDB28:~ # raw /dev/raw/raw11 /dev/rootvg/lv_bquery_tab7   
+MISDB28:~ # raw /dev/raw/raw12 /dev/rootvg/lv_bquery_tab8 
+
+MISDB28:~ # chkconfig --level 235 raw on 
+
+编辑：/etc/init.d/raw  末尾增加
+
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab 
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab1
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab2
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab3
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab4
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab5
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab6
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_idx 
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab7
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_bquery_tab8
+
+chown db2inst1:db2iadm1 /dev/raw/raw3 
+chown db2inst1:db2iadm1 /dev/raw/raw4 
+chown db2inst1:db2iadm1 /dev/raw/raw5
+chown db2inst1:db2iadm1 /dev/raw/raw6
+chown db2inst1:db2iadm1 /dev/raw/raw7
+chown db2inst1:db2iadm1 /dev/raw/raw8
+chown db2inst1:db2iadm1 /dev/raw/raw9
+chown db2inst1:db2iadm1 /dev/raw/raw10
+chown db2inst1:db2iadm1 /dev/raw/raw11
+chown db2inst1:db2iadm1 /dev/raw/raw12
+
+编辑：/etc/raw  末尾增加
+raw3:mapper/rootvg-lv_bquery_tab
+raw4:mapper/rootvg-lv_bquery_tab1
+raw5:mapper/rootvg-lv_bquery_tab2
+raw6:mapper/rootvg-lv_bquery_tab3
+raw7:mapper/rootvg-lv_bquery_tab4
+raw8:mapper/rootvg-lv_bquery_tab5
+raw9:mapper/rootvg-lv_bquery_tab6
+raw10:mapper/rootvg-lv_bquery_idx
+raw11:mapper/rootvg-lv_bquery_tab7
+raw12:mapper/rootvg-lv_bquery_tab8
+        
+#############################创建数据库 BQUERY####################################################
+
+          
+CREATE DATABASE  BQUERY ON '/db2home'    USING CODESET UTF-8  TERRITORY CN  COLLATE USING Identity" 
+CREATE BUFFERPOOL BP32K IMMEDIATE  ALL DBPARTITIONNUMS  SIZE 50000  NUMBLOCKPAGES 0  PAGESIZE 32 K"
+
+
+CREATE LARGE TABLESPACE "BTABLE_DAT_32"
+  IN DATABASE PARTITION GROUP "IBMDEFAULTGROUP"
+  PAGESIZE 32K
+  MANAGED BY DATABASE 
+  USING
+   (Device '/dev/raw/raw3' 983040,
+    Device '/dev/raw/raw4' 983040,
+    Device '/dev/raw/raw5' 983040,
+    Device '/dev/raw/raw6' 983040,
+    Device '/dev/raw/raw7' 983040,
+    Device '/dev/raw/raw8' 983040,
+    Device '/dev/raw/raw9' 983040,
+    Device '/dev/raw/raw11' 983040,
+    Device '/dev/raw/raw12' 983040
+   )
+  EXTENTSIZE 32
+  PREFETCHSIZE 32
+  BUFFERPOOL "BP32K"
+  OVERHEAD 12.67
+  TRANSFERRATE 0.18
+  DROPPED TABLE RECOVERY OFF;
+
+CREATE LARGE TABLESPACE "BTABLE_IDX_32"
+  IN DATABASE PARTITION GROUP "IBMDEFAULTGROUP"
+  PAGESIZE 32K
+  MANAGED BY DATABASE 
+  USING
+   (Device '/dev/raw/raw10' 983040
+   )
+  EXTENTSIZE 32
+  PREFETCHSIZE 32
+  BUFFERPOOL "BP32K"
+  OVERHEAD 12.67
+  TRANSFERRATE 0.18
+  DROPPED TABLE RECOVERY OFF;
+     
+     
+db2 "UPDATE DATABASE CONFIGURATION   FOR BQUERY28 USING     locktimeout 60  logbufsz 2560  logfilsiz 102400  logprimary 20 logsecond 10"
+db2 force application all
+
+
+
+
+
+
+############################# DATADVLP  库 裸设备配置####################################################
+
+MISDB28:~ # lvcreate -L 30G -n    lv_datadvlp_tab   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_datadvlp_tab1   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_datadvlp_tab2   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_datadvlp_tab3    rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_datadvlp_tab4   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_datadvlp_tab5   rootvg  
+MISDB28:~ # lvcreate -L 30G -n    lv_datadvlp_tab6   rootvg  
+MISDB28:~ # lvcreate -L 15G -n    lv_datadvlp_idx    rootvg  
+MISDB28:~ # lvcreate -L 15G -n    lv_datadvlp_idx1    rootvg  
+MISDB28:~ # lvcreate -L 15G -n    lv_datadvlp_idx2    rootvg  
+
+
+           
+MISDB28:~ # raw /dev/raw/raw13 /dev/rootvg/lv_datadvlp_tab                           
+MISDB28:~ # raw /dev/raw/raw14 /dev/rootvg/lv_datadvlp_tab1                          
+MISDB28:~ # raw /dev/raw/raw15 /dev/rootvg/lv_datadvlp_tab2                          
+MISDB28:~ # raw /dev/raw/raw16 /dev/rootvg/lv_datadvlp_tab3                          
+MISDB28:~ # raw /dev/raw/raw17 /dev/rootvg/lv_datadvlp_tab4                          
+MISDB28:~ # raw /dev/raw/raw18 /dev/rootvg/lv_datadvlp_tab5                          
+MISDB28:~ # raw /dev/raw/raw19 /dev/rootvg/lv_datadvlp_tab6                          
+MISDB28:~ # raw /dev/raw/raw20 /dev/rootvg/lv_datadvlp_idx                           
+MISDB28:~ # raw /dev/raw/raw21 /dev/rootvg/lv_datadvlp_idx1                          
+MISDB28:~ # raw /dev/raw/raw22 /dev/rootvg/lv_datadvlp_idx2 
+
+MISDB28:~ # chkconfig --level 235 raw on 
+
+编辑：/etc/init.d/raw  末尾增加
+
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_tab 
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_tab1
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_tab2
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_tab3
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_tab4
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_tab5
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_tab6
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_idx 
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_idx1
+chown db2inst1:db2iadm1 /dev/mapper/rootvg-lv_datadvlp_idx2
+
+chown db2inst1:db2iadm1 /dev/raw/raw13
+chown db2inst1:db2iadm1 /dev/raw/raw14
+chown db2inst1:db2iadm1 /dev/raw/raw15
+chown db2inst1:db2iadm1 /dev/raw/raw16
+chown db2inst1:db2iadm1 /dev/raw/raw17
+chown db2inst1:db2iadm1 /dev/raw/raw18
+chown db2inst1:db2iadm1 /dev/raw/raw19
+chown db2inst1:db2iadm1 /dev/raw/raw20
+chown db2inst1:db2iadm1 /dev/raw/raw21
+chown db2inst1:db2iadm1 /dev/raw/raw22
+
+编辑：/etc/raw  末尾增加
+raw13:mapper/rootvg-lv_datadvlp_tab
+raw14:mapper/rootvg-lv_datadvlp_tab1
+raw15:mapper/rootvg-lv_datadvlp_tab2
+raw16:mapper/rootvg-lv_datadvlp_tab3
+raw17:mapper/rootvg-lv_datadvlp_tab4
+raw18:mapper/rootvg-lv_datadvlp_tab5
+raw19:mapper/rootvg-lv_datadvlp_tab6
+raw20:mapper/rootvg-lv_datadvlp_idx
+raw21:mapper/rootvg-lv_datadvlp_idx1
+raw22:mapper/rootvg-lv_datadvlp_idx2 
+
+#############################创建数据库 DATADVLP####################################################
+
+
+CREATE DATABASE  DATADVLP ON '/db2home'    USING CODESET UTF-8  TERRITORY CN  COLLATE USING Identity" 
+
+CREATE BUFFERPOOL "BP_BDATA_32"	IMMEDIATE
+	ALL DBPARTITIONNUMS  SIZE 100000
+	NUMBLOCKPAGES 0
+	PAGESIZE 32 K;
+
+CREATE BUFFERPOOL "BP_BINDEX_32"	IMMEDIATE
+	ALL DBPARTITIONNUMS  SIZE 20000
+	NUMBLOCKPAGES 0
+	PAGESIZE 32 K;
+
+CREATE BUFFERPOOL "BP_DATA_32"	IMMEDIATE
+	ALL DBPARTITIONNUMS  SIZE 50000
+	NUMBLOCKPAGES 0
+	PAGESIZE 32 K;
+
+CREATE BUFFERPOOL "BP_INDEX_32"	IMMEDIATE
+	ALL DBPARTITIONNUMS  SIZE 20000
+	NUMBLOCKPAGES 0
+	PAGESIZE 32 K;
+
+CREATE BUFFERPOOL "BP_TEMP_32K"	IMMEDIATE
+	ALL DBPARTITIONNUMS  SIZE 35000
+	NUMBLOCKPAGES 0
+	PAGESIZE 32 K;
+
+     
+     
+
+CREATE LARGE TABLESPACE "BTABLE_DAT_32"
+	IN DATABASE PARTITION GROUP "IBMDEFAULTGROUP"
+	PAGESIZE 32 K
+	MANAGED BY DATABASE
+	USING (Device '/dev/raw/raw13' 983040, 
+				 Device '/dev/raw/raw14' 983040, 
+				 Device '/dev/raw/raw15' 983040, 
+				 Device '/dev/raw/raw16' 983040,
+				 Device '/dev/raw/raw17' 983040 
+
+				 
+	) ON DBPARTITIONNUM (0)
+	EXTENTSIZE 16
+	PREFETCHSIZE 16
+	BUFFERPOOL "BP_BDATA_32"
+	OVERHEAD 12.67
+	TRANSFERRATE 0.18
+	NO FILE SYSTEM CACHING;
+
+CREATE LARGE TABLESPACE "BTABLE_INDEX_32"
+	IN DATABASE PARTITION GROUP "IBMDEFAULTGROUP"
+	PAGESIZE 32 K
+	MANAGED BY DATABASE
+	USING (Device '/dev/raw/raw20' 15G, 
+				 Device '/dev/raw/raw21' 15G
+	) ON DBPARTITIONNUM (0)
+	EXTENTSIZE 16
+	PREFETCHSIZE 16
+	BUFFERPOOL "BP_BINDEX_32"
+	OVERHEAD 12.67
+	TRANSFERRATE 0.18
+	DROPPED TABLE RECOVERY OFF
+	NO FILE SYSTEM CACHING;
+
+CREATE LARGE TABLESPACE "COMM_DAT_32"
+	IN DATABASE PARTITION GROUP "IBMDEFAULTGROUP"
+	PAGESIZE 32 K
+	MANAGED BY DATABASE
+	USING (Device '/dev/raw/raw18' 983040, 
+				 Device '/dev/raw/raw19' 983040
+	) ON DBPARTITIONNUM (0)
+	EXTENTSIZE 16
+	PREFETCHSIZE 16
+	BUFFERPOOL "BP_DATA_32"
+	OVERHEAD 12.67
+	TRANSFERRATE 0.18
+	DROPPED TABLE RECOVERY OFF
+	NO FILE SYSTEM CACHING;
+
+CREATE LARGE TABLESPACE "COMM_INDEX_32"
+	IN DATABASE PARTITION GROUP "IBMDEFAULTGROUP"
+	PAGESIZE 32 K
+	MANAGED BY DATABASE
+	USING (Device '/dev/raw/raw22' 15G) ON DBPARTITIONNUM (0)
+	EXTENTSIZE 16
+	PREFETCHSIZE 16
+	BUFFERPOOL "BP_INDEX_32"
+	OVERHEAD 12.67
+	TRANSFERRATE 0.18
+	NO FILE SYSTEM CACHING;
+
+GRANT USE OF TABLESPACE "BTABLE_DAT_32" TO USER "ETLUSER";
+
+GRANT USE OF TABLESPACE "BTABLE_DAT_32" TO USER "MISAPP";
+
+GRANT USE OF TABLESPACE "BTABLE_INDEX_32" TO USER "ETLUSER";
+
+GRANT USE OF TABLESPACE "BTABLE_INDEX_32" TO USER "MISAPP";
+
+GRANT USE OF TABLESPACE "COMM_DAT_32" TO USER "ETLUSER";
+
+GRANT USE OF TABLESPACE "COMM_DAT_32" TO USER "MISAPP";
+
+GRANT USE OF TABLESPACE "COMM_INDEX_32" TO USER "ETLUSER";
+
+GRANT USE OF TABLESPACE "COMM_INDEX_32" TO USER "MISAPP";
+
+COMMENT ON TABLESPACE "BTABLE_DAT_32" IS
+'big data tablesplace';
+
+COMMENT ON TABLESPACE "BTABLE_INDEX_32" IS
+'big data tablesplace';
+
+COMMENT ON TABLESPACE "COMM_DAT_32" IS
+'common data tablesplace';
+
+COMMENT ON TABLESPACE "COMM_INDEX_32" IS
+'big data tablesplace';
+
+
+     
+db2 "UPDATE DATABASE CONFIGURATION   FOR DATADVLP USING     locktimeout 60  logbufsz 2560  logfilsiz 102400  logprimary 20 logsecond 10"
+db2 force application all
+
+db2 "update dbm cfg using FEDERATED yes"  #启用连邦库
+db2stop force
+db2start
+     
+
+
+
+
+
+CREATE WRAPPER DRDA LIBRARY 'libdb2drda.so' OPTIONS ( ADD DB2_FENCED 'N' );
+CREATE SERVER BQUERY TYPE DB2/UDB VERSION '9.7' WRAPPER DRDA AUTHORIZATION "bquery" PASSWORD "bquery_123" OPTIONS ( ADD DBNAME 'BQUERY', ADD DB2_TWO_PHASE_COMMIT 'Y' );
+CREATE USER MAPPING FOR etluser SERVER BQUERY OPTIONS ( ADD REMOTE_AUTHID 'bquery', ADD REMOTE_PASSWORD 'bquery_123' );
+
+
+CREATE NICKNAME "MDS"."FDM_F_ACCT_VCHR_1"
+  FOR "BQUERY"."BQUERY"."FDM_F_ACCT_VCHR_1";
+
+CREATE NICKNAME "MDS"."SAPDM_TRANS_BAL_CHANGE"
+  FOR "BQUERY"."BQUERY"."SAPDM_TRANS_BAL_CHANGE";
+
+CREATE NICKNAME "XXZX"."BEJ88_CUST_FIN_ASSETS_INFO"
+  FOR "BQUERY"."BQUERY"."BEJ88_CUST_FIN_ASSETS_INFO";
+
+
+
+
+
+
+
+
+
+
+
+
+#############################创建数据库 118 MISDB ####################################################
+
+
+db2 "CREATE DATABASE  MISDB ON '/db2home'    USING CODESET UTF-8  TERRITORY CN  COLLATE USING Identity PAGESIZE 16 K"
+
+CREATE REGULAR TABLESPACE COMM_DAT_32 IN DATABASE PARTITION GROUP IBMDEFAULTGROUP PAGESIZE 32768 MANAGED BY DATABASE 
+	 USING (DEVICE '/dev/raw/raw45' 30G,
+		DEVICE '/dev/raw/raw46' 30G)
+	 EXTENTSIZE 16
+	 PREFETCHSIZE 16
+	 BUFFERPOOL IBMDEFAULTBP
+	 OVERHEAD 12.670000
+	 TRANSFERRATE 0.180000 
+	 DROPPED TABLE RECOVERY OFF;
+
+CREATE REGULAR TABLESPACE COMM_IDX_32 IN DATABASE PARTITION GROUP IBMDEFAULTGROUP PAGESIZE 32768 MANAGED BY DATABASE 
+	 USING (DEVICE '/dev/raw/raw47' 30G)
+	 EXTENTSIZE 16
+	 PREFETCHSIZE 16
+	 BUFFERPOOL IBMDEFAULTBP
+	 OVERHEAD 12.670000
+	 TRANSFERRATE 0.180000 
+	 DROPPED TABLE RECOVERY OFF;
